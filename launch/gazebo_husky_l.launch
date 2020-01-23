@@ -1,16 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <launch>
-  <!-- arguments -->
+  <!-- arguments for gazebo and the cimatec_map -->
   <arg name="debug" default="false" />
   <arg name="gui" default="true" />
   <arg name="pause" default="true" />
 
+  <!-- arguments for husky robot-->
   <arg name="laser_enabled" default="true"/>
   <arg name="kinect_enabled" default="true"/>
 
 
-  <!-- include cimatec_map(by Pedro Techio) launcher-->
+  <!-- include cimatec_map(by Pedro Techio) launcher -->
   <include file="$(find cimatec_map)/launch/gazebo.launch">
     <arg name="debug" value="$(arg debug)" />
     <arg name="gui" value="$(arg gui)" />

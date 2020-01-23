@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<launch>
+
+  <!-- Show in Rviz   -->
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find learnbotics_l)/config/config.rviz"/>
+
+</launch>

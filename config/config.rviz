@@ -7,7 +7,7 @@ Panels:
         - /Global Options1
         - /Status1
         - /Image1
-        - /LaserScan1
+        - /PointCloud21
       Splitter Ratio: 0.5
     Tree Height: 522
   - Class: rviz/Selection
@@ -158,6 +158,16 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
+        velodyne:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        velodyne_base_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
       Name: RobotModel
       Robot Description: robot_description
       TF Prefix: ""
@@ -211,6 +221,10 @@ Visualization Manager:
           Value: true
         user_rail_link:
           Value: true
+        velodyne:
+          Value: true
+        velodyne_base_link:
+          Value: true
       Marker Scale: 0.5
       Name: TF
       Show Arrows: true
@@ -251,6 +265,9 @@ Visualization Manager:
                 {}
               top_plate_rear_link:
                 {}
+              velodyne_base_link:
+                velodyne:
+                  {}
             user_rail_link:
               {}
       Update Interval: 0
@@ -275,7 +292,7 @@ Visualization Manager:
         Value: true
       Axis: Z
       Channel Name: intensity
-      Class: rviz/LaserScan
+      Class: rviz/PointCloud2
       Color: 255; 255; 255
       Color Transformer: Intensity
       Decay Time: 0
@@ -285,14 +302,14 @@ Visualization Manager:
       Max Intensity: 0
       Min Color: 0; 0; 0
       Min Intensity: 0
-      Name: LaserScan
+      Name: PointCloud2
       Position Transformer: XYZ
       Queue Size: 10
       Selectable: true
-      Size (Pixels): 3
-      Size (m): 0.009999999776482582
-      Style: Flat Squares
-      Topic: /scan
+      Size (Pixels): 2
+      Size (m): 0.029999999329447746
+      Style: Points
+      Topic: /velodyne_points
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
@@ -325,25 +342,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 32.48418426513672
+      Distance: 10.124533653259277
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0.3138486444950104
-        Y: -0.49374639987945557
-        Z: 0.6532870531082153
+        X: -1.0617730617523193
+        Y: -0.3402906060218811
+        Z: 1.2555571794509888
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.34039804339408875
+      Pitch: 0.4703978896141052
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 0.9853924512863159
+      Yaw: 3.1053998470306396
     Saved: ~
 Window Geometry:
   Displays:

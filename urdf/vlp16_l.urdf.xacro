@@ -1,0 +1,59 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="example">
+  <xacro:arg name="gpu" default="false"/>
+  <xacro:property name="gpu" value="$(arg gpu)" />
+  
+  <material name="black">
+    <color rgba="0 0 0 1"/>
+  </material>
+
+  <!-- suporte -->
+  <link name="suport_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+
+    <visual>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <cylinder radius="0.04" length="0.1"/>
+      </geometry>
+      <gazebo reference="black">
+        <material>Gazebo/Black</material>
+      </gazebo>
+    </visual>
+
+    <collision>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <cylinder radius="0.04" length="0.1"/>
+      </geometry>
+    </collision>
+  </link>
+
+  
+
+  <joint name="husky_suport" type="fixed">
+    <origin xyz="0.0 0.0 0.05" rpy="0.0 0.0 0.0"/>
+    <parent link="top_plate_link"/>
+    <child link="suport_link"/>
+  </joint>
+
+  <!-- velodyne lidar 
+  <xacro:include filename="$(find velodyne_description)/urdf/VLP-16.urdf.xacro"/>
+  <VLP-16 parent="top_plate_link" name="velodyne" topic="/velodyne_points" hz="10" samples="440" gpu="${gpu}">
+    <origin xyz="0 0 2" rpy="0 0 0" />
+  </VLP-16> -->
+
+ 
+
+  <!-- Kinect camera -->
+
+
+
+
+
+</robot>
+

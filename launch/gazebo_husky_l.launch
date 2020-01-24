@@ -25,5 +25,4 @@
     <arg name="kinect_enabled" value="$(arg kinect_enabled)"/>
     <arg name="urdf_extras" value="$(arg urdf_extras)"/>
   </include>
-
 </launch>

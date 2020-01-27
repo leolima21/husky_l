@@ -1,39 +1,60 @@
+ #!/usr/bin/env python2.7
+
+import rospy
+from sensor_msgs.msg import Image
+
 import cv2
+from cv_bridge import CvBridge, CvBridgeError
+
 import numpy as np
 
-cap = cv2.VideoCapture(0)
-if cap.isOpened():
-    while(True):
-        ret, frame = cap.read()
-        # blurring the frame that's captured
-        frame_gau_blur = cv2.GaussianBlur(frame, (3, 3), 0)
-        # converting BGR to HSV
-        hsv = cv2.cvtColor(frame_gau_blur, cv2.COLOR_BGR2HSV)
-        # the range of blue color in HSV
-        lower_blue = np.array([110, 50, 50])
-        higher_blue = np.array([130, 255, 255])
-        # getting the range of blue color in frame
-        blue_range = cv2.inRange(hsv, lower_blue, higher_blue)
-        res_blue = cv2.bitwise_and(frame_gau_blur,frame_gau_blur, mask=blue_range)
-        blue_s_gray = cv2.cvtColor(res_blue, cv2.COLOR_BGR2GRAY)
-        canny_edge = cv2.Canny(blue_s_gray, 50, 240)
-        # applying HoughCircles
-        circles = cv2.HoughCircles(canny_edge, cv2.HOUGH_GRADIENT, dp=1, minDist=10, param1=10, param2=20, minRadius=100, maxRadius=120)
-        cir_cen = []
-        if circles != None:
-            # circles = np.uint16(np.around(circles))
-            for i in circles[0,:]:
-                # drawing on detected circle and its center
-                cv2.circle(frame,(i[0],i[1]),i[2],(0,255,0),2)
-                cv2.circle(frame,(i[0],i[1]),2,(0,0,255),3)
-                cir_cen.append((i[0],i[1]))
-        print cir_cen
-        cv2.imshow('circles', frame)
-        cv2.imshow('gray', blue_s_gray)
-        cv2.imshow('canny', canny_edge)
-        k = cv2.waitKey(5) & 0xFF
-        if k == 27:
-            break
-    cv2.destroyAllWindows()
-else:
-    print 'no cam'
+class Camera:
+  yellow_range = [(25, 50, 50), (32, 255, 255)]
+
+  def __init__(self):
+    rospy.init_node('opencv_camera', anonymous=True)
+    self.bridge = CvBridge()
+    rospy.loginfo("Init Camera!")
+
+  def show_image(self, img):
+    cv2.namedWindow("Image Window", 1)
+    cv2.imshow("Image Window", img)
+    cv2.waitKey(3)
+  
+  def color_detector(self, cv_image):
+    img_rgb = cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB)
+    hsv = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2HSV)
+
+    mask_yellow = cv2.inRange(hsv, self.yellow_range[0], self.yellow_range[1])
+    mask_yellow = cv2.erode(mask_yellow, None, iterations=2)
+    mask_yellow = cv2.dilate(mask_yellow, None, iterations=2)
+    cnt_yellow = cv2.findContours(mask_yellow.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[-2]
+
+    contours_poly = []
+    centers = []
+    radius = []
+    for index, obj_cnt in enumerate(cnt_yellow):
+      contours_poly.append(cv2.approxPolyDP(obj_cnt, 0.009 * cv2.arcLength(obj_cnt, True), True))
+      aux1, aux2 = cv2.minEnclosingCircle(contours_poly[index])
+      centers.append(aux1)
+      radius.append(aux2)
+      if(len(contours_poly[index]) > 10):
+        cv2.circle(img_rgb, (int(centers[index][0]), int(centers[index][1])), int(radius[index]), (0, 255, 255), 2)
+
+    return img_rgb
+
+  def image_callback(self, img_msg):
+    try:
+      cv_image = self.bridge.imgmsg_to_cv2(img_msg, "passthrough")
+      self.show_image(self.color_detector(cv_image))
+    except CvBridgeError, e:
+      rospy.logerr("CvBridge Error: {0}".format(e))
+
+  def run(self):
+    self.sub_image = rospy.Subscriber("/diff/camera_top/image_raw", Image, self.image_callback)
+
+if __name__ == "__main__":
+  cam = Camera()
+  cam.run()
+  while not rospy.is_shutdown():
+    rospy.spin()

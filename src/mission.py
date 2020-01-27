@@ -22,46 +22,43 @@ class camera:
     self.start = time.time()   
 
   def callback(self, data):
-    # timer count
+    # timer count and font
     timer = int(time.time() - self.start)
+    font = cv2.FONT_HERSHEY_SIMPLEX
+
     # convert img to cv2
     cv2_frame = self.bridge.imgmsg_to_cv2(data, "bgr8")
 
-    # blurring the frame that's captured
-    frame_gau_blur = cv2.GaussianBlur(cv2_frame, (3, 3), 0)
-    # converting BGR to HSV
-    hsv = cv2.cvtColor(frame_gau_blur, cv2.COLOR_BGR2HSV)
-    # the range of blue color in HSV
-    lower_blue = np.array([110, 50, 50])
-    higher_blue = np.array([130, 255, 255])
-    # getting the range of blue color in frame
-    blue_range = cv2.inRange(hsv, lower_blue, higher_blue)
-    res_blue = cv2.bitwise_and(frame_gau_blur,frame_gau_blur, mask=blue_range)
-    blue_s_gray = cv2.cvtColor(res_blue, cv2.COLOR_BGR2GRAY)
-    canny_edge = cv2.Canny(blue_s_gray, 50, 240)
-    # applying HoughCircles
-    circles = cv2.HoughCircles(canny_edge, cv2.HOUGH_GRADIENT, dp=1, minDist=10, param1=10, param2=20, minRadius=100, maxRadius=120)
-    cir_cen = []  
+    # color range
+    yellowLower = (20, 100, 100)
+    yellowUpper = (32, 255, 255)
 
-    for (x, y, largura, altura) in circles:	
-      # Desenho do retangulo. No final cor e largura da borda
-      cv2.rectangle(cv2_frame, (x,y), (x + largura, y + altura), (0, 0 , 255), 2)
-    #if circles != None:
-      # circles = np.uint16(np.around(circles))
-     # for i in circles[0,:]:
-        # drawing on detected circle and its center
-      #  cv2.circle(cv2_frame,(i[0],i[1]),i[2],(0,255,0),2)
-       # cv2.circle(cv2_frame,(i[0],i[1]),2,(0,0,255),3)
-        #cir_cen.append((i[0],i[1]))
-    #if circles != None:
-    print "esta detectando"
-    #print circles
-    #cv2.imshow('circ', cv2_frame)
+    # hsv convert and mask create
+    hsv = cv2.cvtColor(cv2_frame, cv2.COLOR_BGR2HSV)
+    maskYellow = cv2.inRange(hsv, yellowLower, yellowUpper)
+    maskYellow = cv2.erode(maskYellow, None, iterations=2)
+    maskYellow = cv2.dilate(maskYellow, None, iterations=2) 
+    cnt_yellow = cv2.findContours(maskYellow.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
+    
+    # circle detection
+    contours_poly = []
+    centers = []
+    radius = [] 
+    
+    for index, obj_cnt in enumerate(cnt_yellow):
+      contours_poly.append(cv2.approxPolyDP(obj_cnt, 0.009 * cv2.arcLength(obj_cnt, True), True))
+      aux1, aux2 = cv2.minEnclosingCircle(contours_poly[index])
+      centers.append(aux1)
+      radius.append(aux2)
+      if(len(contours_poly[index]) > 10):
+        # draw a circle in sphere and put a warning message
+        cv2.circle(cv2_frame, (int(centers[index][0]), int(centers[index][1])), int(radius[index]), (0, 0, 255), 5) 
+        cv2.putText(cv2_frame, 'BOMB HAS BEEN DETECTED!', (20, 130), font, 2, (0, 0, 255), 5) 
 
     # merge timer info to frame
-    font = cv2.FONT_HERSHEY_SIMPLEX
     cv2.putText(cv2_frame, str(timer) + 's', (20, 60), font, 2, (50, 255, 50), 5) 
     cv2.putText(cv2_frame, str(time.ctime()), (10, 700), font, 2, (50, 255, 50), 6)
+
     # convert img to ros and pub image
     ros_frame = self.bridge.cv2_to_imgmsg(cv2_frame, "bgr8")
     self.pub.publish(ros_frame)

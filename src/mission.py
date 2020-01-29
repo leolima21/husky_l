@@ -77,8 +77,8 @@ class Camera:
         # print info
         print('CONTROL INFO :')
         print('radius: ' + str(radius[0]))
-        print('linear vel: ' + str(linear_vel))        
-        print('x position: ' + str(centers[0][0]))
+        print('center x position: ' + str(centers[0][0]))
+        print('linear vel: ' + str(linear_vel))                
         print('angular vel: ' + str(angular_vel))
         print('##################################')
     # merge timer info to frame

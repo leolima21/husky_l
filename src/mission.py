@@ -50,7 +50,7 @@ class camera:
     ### CIRCLE DETECTION ###    
     contours_poly = []
     centers = []
-    radius = [] 
+    radius = []     
     
     # approximate contours to polygons + get bounding rects and circles
     for index, obj_cnt in enumerate(cnt_yellow):
@@ -62,7 +62,9 @@ class camera:
       if(len(contours_poly[index]) > 10):
         # draw a circle in sphere and put a warning message
         cv2.circle(cv2_frame, (int(centers[index][0]), int(centers[index][1])), int(radius[index]), (0, 0, 255), 5) 
-        cv2.putText(cv2_frame, 'BOMB HAS BEEN DETECTED!', (20, 130), font, 2, (0, 0, 255), 5) 
+        cv2.putText(cv2_frame, 'BOMB HAS BEEN DETECTED!', (20, 130), font, 2, (0, 0, 255), 5)
+        print(radius) 
+        print(centers)
 
     # merge timer info to frame
     cv2.putText(cv2_frame, str(timer) + 's', (20, 60), font, 2, (50, 255, 50), 5) 
@@ -71,6 +73,9 @@ class camera:
     # convert img to ros and pub image in a topic
     ros_frame = self.bridge.cv2_to_imgmsg(cv2_frame, "bgr8")
     self.pub.publish(ros_frame)
+
+  #def pid_calculate(self):
+
 
   def listener(self):
     # subscribe to a topic

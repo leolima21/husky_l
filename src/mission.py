@@ -119,14 +119,14 @@ class Camera:
     self.velocity_publisher.publish(vel_msg)
   
   def goal_move_base(self, x_img, radius, distance):
-    y_move_base = (x_img - 640) / (radius*2) 
-    x_move_base = (-math.cos(distance/y_move_base) * distance)
+    y_move_base = (abs(x_img - 640)) / (radius*2) 
+    x_move_base = (math.cos(distance/y_move_base) * distance)
 
-    y_move_base_odom = self.odometry_data.pose.pose.position.y + y_move_base 
-    x_move_base_odom = self.odometry_data.pose.pose.position.x + x_move_base 
+    y_move_base_odom = self.odometry_data.pose.pose.position.y - y_move_base 
+    x_move_base_odom = self.odometry_data.pose.pose.position.x - x_move_base 
 
-    print(x_move_base_odom)
-    print(y_move_base_odom)
+    print(x_move_base)
+    print(y_move_base)
 
   #def move_base_pub(self, x, y, angle):
     #coment

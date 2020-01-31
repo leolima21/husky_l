@@ -12,29 +12,32 @@ from sensor_msgs.msg import Image
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Twist, Vector3
 from cv_bridge import CvBridge, CvBridgeError
+from move_base_msgs.msg import MoveBaseActionGoal
 
 class Camera:
   odometry_data = None
+  mission_phase = None
 
   def __init__(self):
-    # create a node
+     # focal length
+    self.focalLength = 840
+    # bridge object to convert cv2 to ros and ros to cv2
+    self.bridge = CvBridge()
+    # timer var
+    self.start = time.time()
+    # create a camera node
     rospy.init_node('node_camera_mission', anonymous=True)
+    # controllers
+    self.linear_vel_control = Controller(5, -5, 0.01, 0, 0)
+    self.angular_vel_control = Controller(5, -5, 0.01, 0, 0)
+    # odometry topic subscription
+    rospy.Subscriber('/odometry/filtered', Odometry, self.callback_odometry)
     # image publisher object
     self.image_pub = rospy.Publisher('camera/mission', Image, queue_size=10)
     # cmd_vel publisher object
     self.velocity_publisher = rospy.Publisher('cmd_vel', Twist, queue_size=10)
-    # bridge object
-    self.bridge = CvBridge()
-    # timer var
-    self.start = time.time()   
-    # radius control
-    self.linear_vel_control = Controller(5, -5, 0.01, 0, 0)
-    # x position control
-    self.angular_vel_control = Controller(5, -5, 0.01, 0, 0)
-    # odometry topic subscription
-    rospy.Subscriber('/odometry/filtered', Odometry, self.callback_odometry)
-    # focal length
-    self.focalLength = 840
+    # move_base publisher object
+    self.move_base_pub = rospy.Publisher('move_base/goal', MoveBaseActionGoal, queue_size=1)   
 
   def callback(self, data):
     # setup timer and font
@@ -73,7 +76,7 @@ class Camera:
       aux1, aux2 = cv2.minEnclosingCircle(contours_poly[index])
       centers.append(aux1)
       radius.append(aux2)
-      # if the camera find the sphere
+      ## if the camera find the sphere ##
       if(len(contours_poly[index]) > 10):
         # draw a circle in sphere and put a warning message
         cv2.circle(cv2_frame, (int(centers[index][0]), int(centers[index][1])), int(radius[index]), (0, 0, 255), 5) 
@@ -86,10 +89,9 @@ class Camera:
         print('CONTROL INFO :')
         print('radius: ' + str(radius[0]))
         print('center x position: ' + str(centers[0][0]))
-        print('linear vel: ' + str(linear_vel))                
-        print('angular vel: ' + str(angular_vel))
-        print('distance to sphere: ' + str(self.distance_to_camera(radius[0])))
-        self.goal_move_base(centers[0][0], radius[0], self.distance_to_camera(radius[0]))
+        #print('linear vel: ' + str(linear_vel))                
+        #print('angular vel: ' + str(angular_vel))
+        self.goal_move_base(centers[0][0], radius[0])
         print('##################################')
     # merge timer info to frame
     cv2.putText(cv2_frame, str(timer) + 's', (20, 60), font, 2, (50, 255, 50), 5) 
@@ -107,9 +109,6 @@ class Camera:
     rospy.Subscriber('camera/image_raw', Image, self.callback)  
     # simply keeps python from exiting until this node is stopped
     rospy.spin()
-  
-  def distance_to_camera(self, radius):
-    return (1 * self.focalLength) / (radius * 2)
 
   def cmd_vel_pub(self, linear, angular, frame):
     cv2.putText(frame, 'Process: center alignment', (20, 640), cv2.FONT_HERSHEY_SIMPLEX, 2, (200, 0, 0), 3)
@@ -118,15 +117,36 @@ class Camera:
     vel_msg.angular.z = angular
     self.velocity_publisher.publish(vel_msg)
   
-  def goal_move_base(self, x_img, radius, distance):
-    y_move_base = (abs(x_img - 640)) / (radius*2) 
-    x_move_base = (math.cos(distance/y_move_base) * distance)
+  def goal_move_base(self, center_ball, radius):
+    distance = (1 * self.focalLength) / (radius * 2)
+    y_move_base = (abs(center_ball - 640)) / (radius*2) 
+    if y_move_base < 0.006:
+      x_move_base = distance
+    else:
+      #x_move_base = (math.cos(distance / y_move_base) * distance)
+      x_move_base = math.sqrt(distance**2 - y_move_base**2)
+    # odom position var
+    odom_x = self.odometry_data.pose.pose.position.x
+    odom_y = self.odometry_data.pose.pose.position.y
+    # add odometry for real position goal
+    #move_odom_x = (abs(odom_x) + x_move_base) * (odom_x / abs(odom_x))
+    #move_odom_y = (abs(odom_y) + y_move_base) * (odom_y / abs(odom_y))
+    move_odom_x = odom_x + x_move_base
+    move_odom_y = odom_y + y_move_base
+    
+    print('distance to sphere: ' + str(distance))
+    print('INCREMENTO X: ' + str(x_move_base))
+    print('INCREMENTO Y: ' + str(y_move_base))
+    print('ODOM X: ' + str(odom_x))
+    print('ODOM:Y: ' + str(odom_y))
+    print('ODOM_MOVE_BASE X: ' + str(move_odom_x))
+    print('ODOM_MOVE_BASE Y: ' + str(move_odom_y))
 
-    y_move_base_odom = self.odometry_data.pose.pose.position.y - y_move_base 
-    x_move_base_odom = self.odometry_data.pose.pose.position.x - x_move_base 
+    self.pub_move_base(x_move_base, y_move_base)
 
-    print(x_move_base)
-    print(y_move_base)
+  def pub_move_base(self, x, y):
+    if self.mission_phase == None:
+      self.mission_phase = 1
 
   #def move_base_pub(self, x, y, angle):
     #coment

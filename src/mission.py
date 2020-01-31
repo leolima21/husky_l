@@ -145,7 +145,7 @@ class Camera:
   
   def goal_move_base(self, center_ball, radius):
     distance = (1 * self.focalLength) / (radius * 2)
-    y_move_base = (center_ball - self.camera_info.width/2) / (radius*2) 
+    y_move_base = -(center_ball - self.camera_info.width/2) / (radius*2) 
     if abs(y_move_base) < 0.006:
       x_move_base = distance
     else:

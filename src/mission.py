@@ -20,7 +20,7 @@ class Camera:
 
   def __init__(self):
      # focal length
-    self.focalLength = 840
+    self.focalLength = 838.9544
     # bridge object to convert cv2 to ros and ros to cv2
     self.bridge = CvBridge()
     # timer var
@@ -30,8 +30,6 @@ class Camera:
     # controllers
     self.linear_vel_control = Controller(5, -5, 0.01, 0, 0)
     self.angular_vel_control = Controller(5, -5, 0.01, 0, 0)
-    # odometry topic subscription
-    rospy.Subscriber('/odometry/filtered', Odometry, self.callback_odometry)
     # image publisher object
     self.image_pub = rospy.Publisher('camera/mission', Image, queue_size=10)
     # cmd_vel publisher object
@@ -81,18 +79,13 @@ class Camera:
         # draw a circle in sphere and put a warning message
         cv2.circle(cv2_frame, (int(centers[index][0]), int(centers[index][1])), int(radius[index]), (0, 0, 255), 5) 
         cv2.putText(cv2_frame, 'BOMB HAS BEEN DETECTED!', (20, 130), font, 2, (0, 0, 255), 5)
-        # controller actions
-        linear_vel =  0 #self.linear_vel_control.calculate(1, 174, radius[0])
-        angular_vel = self.angular_vel_control.calculate(1, 640, centers[0][0])
-        #self.cmd_vel_pub(linear_vel, angular_vel, cv2_frame) 
-        # print info on terminal
-        print('CONTROL INFO :')
-        print('radius: ' + str(radius[0]))
-        print('center x position: ' + str(centers[0][0]))
-        #print('linear vel: ' + str(linear_vel))                
-        #print('angular vel: ' + str(angular_vel))
+        ### MOVE BASE GOAL ###
         self.goal_move_base(centers[0][0], radius[0])
-        print('##################################')
+        ## controller actions
+        #linear_vel =  0 #self.linear_vel_control.calculate(1, 174, radius[0])
+        #angular_vel = self.angular_vel_control.calculate(1, 640, centers[0][0])
+        #self.cmd_vel_pub(linear_vel, angular_vel, cv2_frame) 
+            
     # merge timer info to frame
     cv2.putText(cv2_frame, str(timer) + 's', (20, 60), font, 2, (50, 255, 50), 5) 
     cv2.putText(cv2_frame, str(time.ctime()), (10, 700), font, 2, (50, 255, 50), 6)
@@ -101,55 +94,38 @@ class Camera:
     ros_frame = self.bridge.cv2_to_imgmsg(cv2_frame, "bgr8")
     self.image_pub.publish(ros_frame)
 
-  def callback_odometry(self, data):
-    self.odometry_data = data
-
   def listener(self):
     # subscribe to a topic
     rospy.Subscriber('camera/image_raw', Image, self.callback)  
     # simply keeps python from exiting until this node is stopped
     rospy.spin()
 
-  def cmd_vel_pub(self, linear, angular, frame):
-    cv2.putText(frame, 'Process: center alignment', (20, 640), cv2.FONT_HERSHEY_SIMPLEX, 2, (200, 0, 0), 3)
-    vel_msg = Twist()
-    vel_msg.linear.x = linear
-    vel_msg.angular.z = angular
-    self.velocity_publisher.publish(vel_msg)
+  #def cmd_vel_pub(self, linear, angular, frame):
+    #cv2.putText(frame, 'Process: center alignment', (20, 640), cv2.FONT_HERSHEY_SIMPLEX, 2, (200, 0, 0), 3)
+    #vel_msg = Twist()
+    #vel_msg.linear.x = linear
+    #vel_msg.angular.z = angular
+    #self.velocity_publisher.publish(vel_msg)
   
   def goal_move_base(self, center_ball, radius):
     distance = (1 * self.focalLength) / (radius * 2)
-    y_move_base = (abs(center_ball - 640)) / (radius*2) 
-    if y_move_base < 0.006:
+    y_move_base = -(center_ball - 640) / (radius*2) 
+    if abs(y_move_base) < 0.006:
       x_move_base = distance
     else:
-      #x_move_base = (math.cos(distance / y_move_base) * distance)
       x_move_base = math.sqrt(distance**2 - y_move_base**2)
-    # odom position var
-    odom_x = self.odometry_data.pose.pose.position.x
-    odom_y = self.odometry_data.pose.pose.position.y
-    # add odometry for real position goal
-    #move_odom_x = (abs(odom_x) + x_move_base) * (odom_x / abs(odom_x))
-    #move_odom_y = (abs(odom_y) + y_move_base) * (odom_y / abs(odom_y))
-    move_odom_x = odom_x + x_move_base
-    move_odom_y = odom_y + y_move_base
-    
-    print('distance to sphere: ' + str(distance))
+
+    # print das informacoes para debug 
+    print('DISTANCIA EM LINHA: ' + str(distance))
     print('INCREMENTO X: ' + str(x_move_base))
     print('INCREMENTO Y: ' + str(y_move_base))
-    print('ODOM X: ' + str(odom_x))
-    print('ODOM:Y: ' + str(odom_y))
-    print('ODOM_MOVE_BASE X: ' + str(move_odom_x))
-    print('ODOM_MOVE_BASE Y: ' + str(move_odom_y))
-
+    print('##################################')
+    # pub the position on move base topic
     self.pub_move_base(x_move_base, y_move_base)
-
-  def pub_move_base(self, x, y):
+  
+  def pub_move_base(self, x, y): 
     if self.mission_phase == None:
       self.mission_phase = 1
-
-  #def move_base_pub(self, x, y, angle):
-    #coment
 
 class Controller:
   sat_max = 0

@@ -10,15 +10,17 @@ from std_msgs.msg import Int32
 from std_msgs.msg import String
 from sensor_msgs.msg import Image
 from nav_msgs.msg import Odometry
+from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import Twist, Vector3
 from cv_bridge import CvBridge, CvBridgeError
 from move_base_msgs.msg import MoveBaseActionGoal
 
-class Camera:
-  odometry_data = None
-  mission_phase = None
+class Camera: 
+  timer_flag = None
 
   def __init__(self):
+    # flag var
+    self.flag = True
      # focal length
     self.focalLength = 838.9544
     # bridge object to convert cv2 to ros and ros to cv2
@@ -27,15 +29,10 @@ class Camera:
     self.start = time.time()
     # create a camera node
     rospy.init_node('node_camera_mission', anonymous=True)
-    # controllers
-    self.linear_vel_control = Controller(5, -5, 0.01, 0, 0)
-    self.angular_vel_control = Controller(5, -5, 0.01, 0, 0)
     # image publisher object
     self.image_pub = rospy.Publisher('camera/mission', Image, queue_size=10)
-    # cmd_vel publisher object
-    self.velocity_publisher = rospy.Publisher('cmd_vel', Twist, queue_size=10)
     # move_base publisher object
-    self.move_base_pub = rospy.Publisher('move_base/goal', MoveBaseActionGoal, queue_size=1)   
+    self.move_base_pub = rospy.Publisher("/move_base_simple/goal", PoseStamped, queue_size=1) 
 
   def callback(self, data):
     # setup timer and font
@@ -81,10 +78,6 @@ class Camera:
         cv2.putText(cv2_frame, 'BOMB HAS BEEN DETECTED!', (20, 130), font, 2, (0, 0, 255), 5)
         ### MOVE BASE GOAL ###
         self.goal_move_base(centers[0][0], radius[0])
-        ## controller actions
-        #linear_vel =  0 #self.linear_vel_control.calculate(1, 174, radius[0])
-        #angular_vel = self.angular_vel_control.calculate(1, 640, centers[0][0])
-        #self.cmd_vel_pub(linear_vel, angular_vel, cv2_frame) 
             
     # merge timer info to frame
     cv2.putText(cv2_frame, str(timer) + 's', (20, 60), font, 2, (50, 255, 50), 5) 
@@ -99,13 +92,6 @@ class Camera:
     rospy.Subscriber('camera/image_raw', Image, self.callback)  
     # simply keeps python from exiting until this node is stopped
     rospy.spin()
-
-  #def cmd_vel_pub(self, linear, angular, frame):
-    #cv2.putText(frame, 'Process: center alignment', (20, 640), cv2.FONT_HERSHEY_SIMPLEX, 2, (200, 0, 0), 3)
-    #vel_msg = Twist()
-    #vel_msg.linear.x = linear
-    #vel_msg.angular.z = angular
-    #self.velocity_publisher.publish(vel_msg)
   
   def goal_move_base(self, center_ball, radius):
     distance = (1 * self.focalLength) / (radius * 2)
@@ -114,49 +100,26 @@ class Camera:
       x_move_base = distance
     else:
       x_move_base = math.sqrt(distance**2 - y_move_base**2)
+    
+    # setup pub values with x and y positions
+    msg_move_to_goal = PoseStamped()
+    msg_move_to_goal.pose.position.x = x_move_base - 2
+    msg_move_to_goal.pose.position.y = y_move_base
+    msg_move_to_goal.pose.orientation.w = 1
+    msg_move_to_goal.header.frame_id = 'kinect_link'
+    # pub a best rout to move base if distance is < 4m
+    if self.flag and (distance > 4): 
+      self.move_base_pub.publish(msg_move_to_goal)
+      self.flag = False
+      self.timer_flag = time.time()
+    if time.time() - self.timer_flag > 5:
+      self.flag = True
 
-    # print das informacoes para debug 
+    # print information for debug
     print('DISTANCIA EM LINHA: ' + str(distance))
     print('INCREMENTO X: ' + str(x_move_base))
     print('INCREMENTO Y: ' + str(y_move_base))
     print('##################################')
-    # pub the position on move base topic
-    self.pub_move_base(x_move_base, y_move_base)
-  
-  def pub_move_base(self, x, y): 
-    if self.mission_phase == None:
-      self.mission_phase = 1
-
-class Controller:
-  sat_max = 0
-  sat_min = 0
-  kp = 0
-  ki = 0
-  kd = 0
-  error_integral = 0 
-  error_prev = 0 
-
-  def __init__ (self, sat_max, sat_min, kp, ki, kd):
-    self.sat_max = sat_max 
-    self.sat_min = sat_min 
-    self.kp = kp 
-    self.ki = ki 
-    self.kd = kd 
-    
-  def calculate(self, time, setpoint, process):
-    # set the error
-    self.error = setpoint - process
-    self.error_integral =+ self.error
-    # calculate the output
-    control_output = self.kp*self.error + self.ki*(self.error_integral)*time + self.kd*(self.error - self.error_prev)/time    
-    # using saturation max and min in control_output 
-    if (control_output > self.sat_max):
-      control_output = self.sat_max
-    elif (control_output < self.sat_min):
-      control_output = self.sat_min
-    # set error_prev for kd   
-    self.error_prev = self.error   
-    return control_output  
 
 # main function
 if __name__	== '__main__':

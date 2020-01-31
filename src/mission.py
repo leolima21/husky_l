@@ -142,7 +142,7 @@ class Camera:
     self.msg_move_to_goal.pose.position.x = x_move_base
     self.msg_move_to_goal.pose.position.y = y_move_base
     self.msg_move_to_goal.pose.orientation.w = 1
-    self.msg_move_to_goal.header.frame_id = "Camera"
+    self.msg_move_to_goal.header.frame_id = self.camera_info.header.frame_id
     if self.flag:
       self.pub_move_to_goal.publish(self.msg_move_to_goal)
       self.flag = False

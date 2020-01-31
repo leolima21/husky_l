@@ -14,10 +14,11 @@ from geometry_msgs.msg import Twist, Vector3
 from cv_bridge import CvBridge, CvBridgeError
 from move_base_msgs.msg import MoveBaseActionGoal
 from geometry_msgs.msg import PoseStamped
+from nav2d_navigator.msg import GetFirstMapActionGoal, ExploreActionGoal
+from actionlib_msgs.msg import GoalID 
 
 
 class Camera:
-  odometry_data = None
   mission_phase = None
   camera_info = None
   msg_move_to_goal = None
@@ -40,8 +41,6 @@ class Camera:
     rospy.Subscriber('/odometry/filtered', Odometry, self.callback_odometry)
     # image publisher object
     self.image_pub = rospy.Publisher('camera/mission', Image, queue_size=10)
-    # cmd_vel publisher object
-    self.velocity_publisher = rospy.Publisher('cmd_vel', Twist, queue_size=10)
     # get camera info
     rospy.Subscriber("/diff/camera_top/camera_info", CameraInfo, self.callback_camera_info)
     # move to goal 
@@ -49,6 +48,18 @@ class Camera:
     self.msg_move_to_goal = PoseStamped()
     self.flag = True
     self.camera_info = CameraInfo()
+
+    self.start_map = rospy.Publisher("/GetFirstMap/goal", GetFirstMapActionGoal, queue_size=1)
+    self.start_explore = rospy.Publisher("/Explore/goal", ExploreActionGoal, queue_size = 1)
+    self.cancel_map = rospy.Publisher("/GetFirstMap/cancel", GoalID, queue_size = 1)
+    self.cancel_explore = rospy.Publisher("/Explore/cancel", GoalID, queue_size = 1)
+    time.sleep(1)
+    self.start_map.publish()
+    time.sleep(5)
+    self.cancel_map.publish()
+    time.sleep(2)
+    self.start_explore.publish()
+
 
 
   def callback(self, data):
@@ -134,7 +145,7 @@ class Camera:
   
   def goal_move_base(self, center_ball, radius):
     distance = (1 * self.focalLength) / (radius * 2)
-    y_move_base = -(center_ball - self.camera_info.width/2) / (radius*2) 
+    y_move_base = (center_ball - self.camera_info.width/2) / (radius*2) 
     if abs(y_move_base) < 0.006:
       x_move_base = distance
     else:
@@ -144,10 +155,12 @@ class Camera:
     self.msg_move_to_goal.pose.orientation.w = 1
     self.msg_move_to_goal.header.frame_id = self.camera_info.header.frame_id
     if self.flag:
+      self.cancel_explore.publish()
+      time.sleep(1)  
       self.pub_move_to_goal.publish(self.msg_move_to_goal)
       self.flag = False
       self.timer_flag = time.time()
-    if time.time() - self.timer_flag > 10:
+    if time.time() - self.timer_flag > 5:
       self.flag = True      
     print('distance to sphere: ' + str(distance))
     print('INCREMENTO X: ' + str(x_move_base))

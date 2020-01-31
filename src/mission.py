@@ -6,6 +6,7 @@ import math
 import time
 import rospy
 import numpy as np
+import os
 from std_msgs.msg import Int32
 from std_msgs.msg import String
 from sensor_msgs.msg import Image, CameraInfo
@@ -156,6 +157,7 @@ class Camera:
     self.msg_move_to_goal.header.frame_id = self.camera_info.header.frame_id
     if self.flag:
       self.cancel_explore.publish()
+      os.system("rosnode kill /Operator")
       time.sleep(1)  
       self.pub_move_to_goal.publish(self.msg_move_to_goal)
       self.flag = False

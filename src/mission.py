@@ -8,19 +8,25 @@ import rospy
 import numpy as np
 from std_msgs.msg import Int32
 from std_msgs.msg import String
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import Image, CameraInfo
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Twist, Vector3
 from cv_bridge import CvBridge, CvBridgeError
 from move_base_msgs.msg import MoveBaseActionGoal
+from geometry_msgs.msg import PoseStamped
+
 
 class Camera:
   odometry_data = None
   mission_phase = None
+  camera_info = None
+  msg_move_to_goal = None
+  flag = None
+  timer_flag = None
 
   def __init__(self):
      # focal length
-    self.focalLength = 840
+    self.focalLength = 937.8194580078125
     # bridge object to convert cv2 to ros and ros to cv2
     self.bridge = CvBridge()
     # timer var
@@ -36,8 +42,14 @@ class Camera:
     self.image_pub = rospy.Publisher('camera/mission', Image, queue_size=10)
     # cmd_vel publisher object
     self.velocity_publisher = rospy.Publisher('cmd_vel', Twist, queue_size=10)
-    # move_base publisher object
-    self.move_base_pub = rospy.Publisher('move_base/goal', MoveBaseActionGoal, queue_size=1)   
+    # get camera info
+    rospy.Subscriber("/diff/camera_top/camera_info", CameraInfo, self.callback_camera_info)
+    # move to goal 
+    self.pub_move_to_goal = rospy.Publisher("/move_base_simple/goal", PoseStamped, queue_size=1)
+    self.msg_move_to_goal = PoseStamped()
+    self.flag = True
+    self.camera_info = CameraInfo()
+
 
   def callback(self, data):
     # setup timer and font
@@ -104,9 +116,12 @@ class Camera:
   def callback_odometry(self, data):
     self.odometry_data = data
 
+  def callback_camera_info(self, data):
+    self.camera_info = data
+
   def listener(self):
     # subscribe to a topic
-    rospy.Subscriber('camera/image_raw', Image, self.callback)  
+    rospy.Subscriber('/diff/camera_top/image_raw', Image, self.callback)  
     # simply keeps python from exiting until this node is stopped
     rospy.spin()
 
@@ -119,30 +134,25 @@ class Camera:
   
   def goal_move_base(self, center_ball, radius):
     distance = (1 * self.focalLength) / (radius * 2)
-    y_move_base = (abs(center_ball - 640)) / (radius*2) 
-    if y_move_base < 0.006:
+    y_move_base = -(center_ball - self.camera_info.width/2) / (radius*2) 
+    if abs(y_move_base) < 0.006:
       x_move_base = distance
     else:
-      #x_move_base = (math.cos(distance / y_move_base) * distance)
       x_move_base = math.sqrt(distance**2 - y_move_base**2)
-    # odom position var
-    odom_x = self.odometry_data.pose.pose.position.x
-    odom_y = self.odometry_data.pose.pose.position.y
-    # add odometry for real position goal
-    #move_odom_x = (abs(odom_x) + x_move_base) * (odom_x / abs(odom_x))
-    #move_odom_y = (abs(odom_y) + y_move_base) * (odom_y / abs(odom_y))
-    move_odom_x = odom_x + x_move_base
-    move_odom_y = odom_y + y_move_base
-    
+    self.msg_move_to_goal.pose.position.x = x_move_base
+    self.msg_move_to_goal.pose.position.y = y_move_base
+    self.msg_move_to_goal.pose.orientation.w = 1
+    self.msg_move_to_goal.header.frame_id = "Camera"
+    if self.flag:
+      self.pub_move_to_goal.publish(self.msg_move_to_goal)
+      self.flag = False
+      self.timer_flag = time.time()
+    if time.time() - self.timer_flag > 10:
+      self.flag = True      
     print('distance to sphere: ' + str(distance))
     print('INCREMENTO X: ' + str(x_move_base))
     print('INCREMENTO Y: ' + str(y_move_base))
-    print('ODOM X: ' + str(odom_x))
-    print('ODOM:Y: ' + str(odom_y))
-    print('ODOM_MOVE_BASE X: ' + str(move_odom_x))
-    print('ODOM_MOVE_BASE Y: ' + str(move_odom_y))
 
-    self.pub_move_base(x_move_base, y_move_base)
 
   def pub_move_base(self, x, y):
     if self.mission_phase == None:

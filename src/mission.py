@@ -1,6 +1,7 @@
 #!/usr/bin/env python 
 
 # libraries:
+import os
 import cv2
 import math
 import time
@@ -10,10 +11,12 @@ from std_msgs.msg import Int32
 from std_msgs.msg import String
 from sensor_msgs.msg import Image
 from nav_msgs.msg import Odometry
+from actionlib_msgs.msg import GoalID 
 from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import Twist, Vector3
 from cv_bridge import CvBridge, CvBridgeError
 from move_base_msgs.msg import MoveBaseActionGoal
+from nav2d_navigator.msg import GetFirstMapActionGoal, ExploreActionGoal
 
 class Camera: 
   timer_flag = None
@@ -33,6 +36,17 @@ class Camera:
     self.image_pub = rospy.Publisher('camera/mission', Image, queue_size=10)
     # move_base publisher object
     self.move_base_pub = rospy.Publisher("/move_base_simple/goal", PoseStamped, queue_size=1) 
+    # EXPLORATION THINGS
+    self.start_map = rospy.Publisher("/GetFirstMap/goal", GetFirstMapActionGoal, queue_size=1)
+    self.start_explore = rospy.Publisher("/Explore/goal", ExploreActionGoal, queue_size = 1)
+    self.cancel_map = rospy.Publisher("/GetFirstMap/cancel", GoalID, queue_size = 1)
+    self.cancel_explore = rospy.Publisher("/Explore/cancel", GoalID, queue_size = 1)
+    time.sleep(1)
+    self.start_map.publish()
+    time.sleep(5)
+    self.cancel_map.publish()
+    time.sleep(2)
+    self.start_explore.publish()
 
   def callback(self, data):
     # setup timer and font
@@ -109,6 +123,9 @@ class Camera:
     msg_move_to_goal.header.frame_id = 'kinect_link'
     # pub a best rout to move base if distance is < 4m
     if self.flag and (distance > 4): 
+      self.cancel_explore.publish()
+      os.system("rosnode kill /Operator")
+      time.sleep(1)  
       self.move_base_pub.publish(msg_move_to_goal)
       self.flag = False
       self.timer_flag = time.time()

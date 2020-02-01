@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <launch>
+  <!-- miguel arguments-->
+  <param name="use_sim_time" value="true"/>
+  <arg name="scan_topic" default="scan" />
+
   <!-- arguments for gazebo and the cimatec_map -->
   <arg name="debug" default="false" />
   <arg name="gui" default="true" />
@@ -24,12 +28,18 @@
     <arg name="laser_enabled" value="$(arg laser_enabled)"/>
     <arg name="kinect_enabled" value="$(arg kinect_enabled)"/>
     <arg name="urdf_extras" value="$(arg urdf_extras)"/>
+    <arg name="x" default="45.0"/>
+    <arg name="y" default="-2.0"/>
+    <arg name="z" default="0.0"/>
+    <arg name="yaw" default="3.1415"/> 
   </include>
+
   <!-- ################## MOVIMENTATION ###################### -->
   <!-- move base -->
-  <include file="$(find husky_navigation)/launch/move_base.launch">
+  <include file="$(find husky_navigation)/launch/move_base.launch" />
+  <!-- <include file="$(find husky_navigation)/launch/move_base.launch">
     <arg name="no_static_map" value="true"/>
-  </include> 
+  </include> --> 
 
   <!-- convert point cloud to laser scan -->
   <node pkg="pointcloud_to_laserscan" type="pointcloud_to_laserscan_node" name="pointcloud_to_laserscan">
@@ -37,11 +47,11 @@
     <rosparam>
       target_frame: velodyne # Leave disabled to output scan in pointcloud frame
       transform_tolerance: 0.01
-      min_height: -0.45
+      min_height: -0.4
       max_height: 2.0 
       angle_min: -M_PI
       angle_max: M_PI
-      angle_increment: 0.0087 # M_PI/360.0
+      angle_increment: 0.0087
       scan_time: 0.3333
       range_min: 0.45
       range_max: 130.0
@@ -51,31 +61,31 @@
       # 0 : Detect number of cores
       # 1 : Single threaded
       # 2->inf : Parallelism level
-      concurrency_level: 0
+      concurrency_level: 1
     </rosparam>
   </node>
 
   <!-- gmapping-->
-  <!-- <node pkg="gmapping" type="slam_gmapping" name="slam_gmapping">
-    <rosparam file="$(find challenge_husky)/param/mapper.yaml"/> 
+  <node pkg="gmapping" type="slam_gmapping" name="slam_gmapping">
+    <!-- <rosparam file="$(find husky_l)/param/mapper.yaml"/>  -->
     <rosparam>
       odom_frame: odom
       base_frame: base_link
       map_frame: map
       map_update_interval: 0.5 # Publish new map
-      maxUrange: 110 # Should be just less than sensor range
-      maxRange: 140 # Should be just greater than sensor range
-      particles: 100 # Increased from 80
+      maxUrange: 30 # Should be just less than sensor range
+      maxRange: 60 # Should be just greater than sensor range
+      particles: 40 # Increased from 80
       # Update frequencies
-      linearUpdate: 0.3
-      angularUpdate: 0.5
+      linearUpdate: 0.1
+      angularUpdate: 0.1
       temporalUpdate: 2.0
       resampleThreshold: 0.5
       # Initial Map Size
-      xmin: -100.0
-      ymin: -100.0
-      xmax: 100.0
-      ymax: 100.0
+      xmin: -80.0
+      ymin: -80.0
+      xmax: 80.0
+      ymax: 80.0
       delta: 0.05
       # All default
       sigma: 0.05
@@ -91,24 +101,24 @@
       lasamplerange: 0.005
       lasamplestep: 0.005
     </rosparam>
-  </node> -->
+    <remap from="scan" to="$(arg scan_topic)"/>
+  </node>
 
   <!--  NAV 2D  -->
-	<!-- <param name="use_sim_time" value="true" />
-	<rosparam file="$(find husky_l)/param/ros.yaml"/>
+	<rosparam file="$(find nav2d_tutorials)/param/ros.yaml"/>
 
 	<node name="Operator" pkg="nav2d_operator" type="operator" >
-		<remap from="scan" to="base_scan"/>
-		<rosparam file="$(find husky_l)/param/operator.yaml"/>
-		<rosparam file="$(find husky_l)/param/costmap.yaml" ns="local_map" />
+		<remap from="scan" to="scan"/>
+		<rosparam file="$(find nav2d_tutorials)/param/operator.yaml"/>
+		<rosparam file="$(find nav2d_tutorials)/param/costmap.yaml" ns="local_map" />
 	</node>
 
 	<node name="Navigator" pkg="nav2d_navigator" type="navigator">
-		<rosparam file="$(find husky_l)/param/navigator.yaml"/>
+		<rosparam file="$(find nav2d_tutorials)/param/navigator.yaml"/>
 	</node>
 
 	<node name="GetMap" pkg="nav2d_navigator" type="get_map_client" />
 	<node name="Explore" pkg="nav2d_navigator" type="explore_client" />
-	<node name="SetGoal" pkg="nav2d_navigator" type="set_goal_client" /> -->
+	<node name="SetGoal" pkg="nav2d_navigator" type="set_goal_client" /> 
 
 </launch>

@@ -22,6 +22,8 @@ class Camera:
   timer_flag = None
 
   def __init__(self):
+    # node killer
+    self.kill = True
     # flag var
     self.flag = True
      # focal length
@@ -43,7 +45,7 @@ class Camera:
     self.cancel_explore = rospy.Publisher("/Explore/cancel", GoalID, queue_size = 1)
     time.sleep(1)
     self.start_map.publish()
-    time.sleep(5)
+    time.sleep(10)
     self.cancel_map.publish()
     time.sleep(2)
     self.start_explore.publish()
@@ -90,6 +92,12 @@ class Camera:
         # draw a circle in sphere and put a warning message
         cv2.circle(cv2_frame, (int(centers[index][0]), int(centers[index][1])), int(radius[index]), (0, 0, 255), 5) 
         cv2.putText(cv2_frame, 'BOMB HAS BEEN DETECTED!', (20, 130), font, 2, (0, 0, 255), 5)
+        self.cancel_explore.publish()
+        if self.kill == True:          
+          os.system('rosnode kill /Operator')
+          #time.sleep(3)
+          self.kill == False
+ 
         ### MOVE BASE GOAL ###
         self.goal_move_base(centers[0][0], radius[0])
             
@@ -117,15 +125,12 @@ class Camera:
     
     # setup pub values with x and y positions
     msg_move_to_goal = PoseStamped()
-    msg_move_to_goal.pose.position.x = x_move_base - 2
+    msg_move_to_goal.pose.position.x = x_move_base - 3
     msg_move_to_goal.pose.position.y = y_move_base
     msg_move_to_goal.pose.orientation.w = 1
     msg_move_to_goal.header.frame_id = 'kinect_link'
     # pub a best rout to move base if distance is < 4m
-    if self.flag and (distance > 4): 
-      self.cancel_explore.publish()
-      os.system("rosnode kill /Operator")
-      time.sleep(1)  
+    if self.flag and (distance > 4):       
       self.move_base_pub.publish(msg_move_to_goal)
       self.flag = False
       self.timer_flag = time.time()
@@ -133,6 +138,7 @@ class Camera:
       self.flag = True
 
     # print information for debug
+    print('BOMB HAS BEEN DETECTED')
     print('DISTANCIA EM LINHA: ' + str(distance))
     print('INCREMENTO X: ' + str(x_move_base))
     print('INCREMENTO Y: ' + str(y_move_base))

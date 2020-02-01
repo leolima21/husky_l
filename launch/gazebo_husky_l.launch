@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <launch>
-  <!-- miguel arguments-->
+  <!-- ################## GAZEBO ###################### -->
+  <!-- scan arguments-->
   <param name="use_sim_time" value="true"/>
   <arg name="scan_topic" default="scan" />
 
@@ -37,9 +38,6 @@
   <!-- ################## MOVIMENTATION ###################### -->
   <!-- move base -->
   <include file="$(find husky_navigation)/launch/move_base.launch" />
-  <!-- <include file="$(find husky_navigation)/launch/move_base.launch">
-    <arg name="no_static_map" value="true"/>
-  </include> --> 
 
   <!-- convert point cloud to laser scan -->
   <node pkg="pointcloud_to_laserscan" type="pointcloud_to_laserscan_node" name="pointcloud_to_laserscan">
@@ -67,7 +65,6 @@
 
   <!-- gmapping-->
   <node pkg="gmapping" type="slam_gmapping" name="slam_gmapping">
-    <!-- <rosparam file="$(find husky_l)/param/mapper.yaml"/>  -->
     <rosparam>
       odom_frame: odom
       base_frame: base_link
@@ -120,5 +117,4 @@
 	<node name="GetMap" pkg="nav2d_navigator" type="get_map_client" />
 	<node name="Explore" pkg="nav2d_navigator" type="explore_client" />
 	<node name="SetGoal" pkg="nav2d_navigator" type="set_goal_client" /> 
-
 </launch>

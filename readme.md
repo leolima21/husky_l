@@ -1,4 +1,4 @@
-# **Husky Robot** :wolf: 
+# **Husky navigation, explore, mapping and yellow ball detection ** :wolf: 
 
 This project was make to autonomous navigation for Husky Clearpath simulated in Gazebo to found a yellow ball.
 

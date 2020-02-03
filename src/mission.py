@@ -9,8 +9,9 @@ import rospy
 import numpy as np
 from std_msgs.msg import Int32
 from std_msgs.msg import String
-from sensor_msgs.msg import Image
+from controller import Controller
 from nav_msgs.msg import Odometry
+from sensor_msgs.msg import Image
 from actionlib_msgs.msg import GoalID 
 from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import Twist, Vector3
@@ -18,15 +19,19 @@ from cv_bridge import CvBridge, CvBridgeError
 from move_base_msgs.msg import MoveBaseActionGoal
 from nav2d_navigator.msg import GetFirstMapActionGoal, ExploreActionGoal
 
-class Camera: 
-  timer_flag = None
-
+class Camera:
   def __init__(self):
     # node killer
-    self.kill = True
+    self.kill = False
     # flag var
-    self.flag = True
-     # focal length
+    self.flag1 = True
+    self.flag2 = True
+    self.flag3 = True
+    # save img var
+    self.save_img = True
+    # end mission var
+    self.end_mission = True
+    # focal length
     self.focalLength = 838.9544
     # bridge object to convert cv2 to ros and ros to cv2
     self.bridge = CvBridge()
@@ -34,18 +39,24 @@ class Camera:
     self.start = time.time()
     # create a camera node
     rospy.init_node('node_camera_mission', anonymous=True)
+    # controllers
+    self.linear_vel_control = Controller(5, -5, 0.01, 0, 0)
+    self.angular_vel_control = Controller(5, -5, 0.01, 0, 0)
     # image publisher object
     self.image_pub = rospy.Publisher('camera/mission', Image, queue_size=10)
+    # cmd_vel publisher object for flag3 adjustment
+    self.velocity_publisher = rospy.Publisher('cmd_vel', Twist, queue_size=10)
     # move_base publisher object
     self.move_base_pub = rospy.Publisher("/move_base_simple/goal", PoseStamped, queue_size=1) 
-    # EXPLORATION THINGS
+    # exploration setup
     self.start_map = rospy.Publisher("/GetFirstMap/goal", GetFirstMapActionGoal, queue_size=1)
     self.start_explore = rospy.Publisher("/Explore/goal", ExploreActionGoal, queue_size = 1)
     self.cancel_map = rospy.Publisher("/GetFirstMap/cancel", GoalID, queue_size = 1)
     self.cancel_explore = rospy.Publisher("/Explore/cancel", GoalID, queue_size = 1)
+    # basic map setup
     time.sleep(1)
     self.start_map.publish()
-    time.sleep(10)
+    time.sleep(5)
     self.cancel_map.publish()
     time.sleep(2)
     self.start_explore.publish()
@@ -55,7 +66,7 @@ class Camera:
     timer = int(time.time() - self.start)
     font = cv2.FONT_HERSHEY_SIMPLEX
 
-    # convert img to cv2
+    # convert ros img to cv2
     cv2_frame = self.bridge.imgmsg_to_cv2(data, "bgr8")
 
     ### COLOR DETECTION ###
@@ -88,22 +99,31 @@ class Camera:
       centers.append(aux1)
       radius.append(aux2)
       ## if the camera find the sphere ##
-      if(len(contours_poly[index]) > 10):
+      if(len(contours_poly[index]) > 10):        
         # draw a circle in sphere and put a warning message
         cv2.circle(cv2_frame, (int(centers[index][0]), int(centers[index][1])), int(radius[index]), (0, 0, 255), 5) 
         cv2.putText(cv2_frame, 'BOMB HAS BEEN DETECTED!', (20, 130), font, 2, (0, 0, 255), 5)
-        self.cancel_explore.publish()
-        if self.kill == True:          
-          os.system('rosnode kill /Operator')
-          #time.sleep(3)
-          self.kill == False
- 
+        if not self.kill:       
+          os.system('rosnode kill Operator')
+          #self.cmd_vel_pub(0, 0)
+          #print('BOMB HAS BEEN DETECTED')
+          #time.sleep(10)
+          self.kill = True
+        
         ### MOVE BASE GOAL ###
         self.goal_move_base(centers[0][0], radius[0])
             
     # merge timer info to frame
     cv2.putText(cv2_frame, str(timer) + 's', (20, 60), font, 2, (50, 255, 50), 5) 
     cv2.putText(cv2_frame, str(time.ctime()), (10, 700), font, 2, (50, 255, 50), 6)
+
+    # merge end mission information and save a jpg file
+    if self.end_mission == False:
+      cv2.putText(cv2_frame, 'MISSION ACCOMPLISHED', (20, 220), font, 2, (255, 0, 0), 5)
+      # save img
+      if self.save_img:
+        cv2.imwrite('end_mission.jpg', cv2_frame)
+        self.save_img = False
 
     # convert img to ros and pub image in a topic
     ros_frame = self.bridge.cv2_to_imgmsg(cv2_frame, "bgr8")
@@ -114,8 +134,15 @@ class Camera:
     rospy.Subscriber('camera/image_raw', Image, self.callback)  
     # simply keeps python from exiting until this node is stopped
     rospy.spin()
+
+  def cmd_vel_pub(self, linear, angular):
+    vel_msg = Twist()
+    vel_msg.linear.x = linear
+    vel_msg.angular.z = angular
+    self.velocity_publisher.publish(vel_msg)
   
   def goal_move_base(self, center_ball, radius):
+    # distance calculation
     distance = (1 * self.focalLength) / (radius * 2)
     y_move_base = -(center_ball - 640) / (radius*2) 
     if abs(y_move_base) < 0.006:
@@ -129,19 +156,38 @@ class Camera:
     msg_move_to_goal.pose.position.y = y_move_base
     msg_move_to_goal.pose.orientation.w = 1
     msg_move_to_goal.header.frame_id = 'kinect_link'
-    # pub a best rout to move base if distance is < 4m
-    if self.flag and (distance > 4):       
-      self.move_base_pub.publish(msg_move_to_goal)
-      self.flag = False
-      self.timer_flag = time.time()
-    if time.time() - self.timer_flag > 5:
-      self.flag = True
 
+    # pub values on move_base or use controller for best position
+    if self.flag1:
+      self.move_base_pub.publish(msg_move_to_goal)
+      self.flag1 = False
+
+    elif self.flag2 and distance < 10:
+      # self.cmd_vel_pub(0, 0)
+      # print('calculate a better position...')
+      # time.sleep(10)
+      self.move_base_pub.publish(msg_move_to_goal)
+      self.flag2 = False
+
+    elif distance < 4:
+      self.flag3 = False
+      if (172 < radius < 176) and (638 < center_ball < 642):
+        self.end_mission = False 
+      # controller actions
+      linear_vel = self.linear_vel_control.calculate(1, 174, radius)
+      angular_vel = self.angular_vel_control.calculate(1, 640, center_ball)
+      self.cmd_vel_pub(linear_vel, angular_vel)
+      
     # print information for debug
-    print('BOMB HAS BEEN DETECTED')
+    print('DEBUG:')
     print('DISTANCIA EM LINHA: ' + str(distance))
     print('INCREMENTO X: ' + str(x_move_base))
     print('INCREMENTO Y: ' + str(y_move_base))
+    print('FLAG1: ' + str(self.flag1))
+    print('FLAG2: ' + str(self.flag2))
+    print('FLAG3: ' + str(self.flag3))
+    print('RAIO: ' + str(radius))
+    print('POSICAO DO CENTRO:' + str(center_ball))
     print('##################################')
 
 # main function

@@ -8,7 +8,7 @@
 
   <!-- arguments for gazebo and the cimatec_map -->
   <arg name="debug" default="false" />
-  <arg name="gui" default="true" />
+  <arg name="gui" default="false" />
   <arg name="pause" default="true" />
 
   <!-- arguments for husky robot and urdf extras -->
@@ -16,8 +16,8 @@
   <arg name="kinect_enabled" default="false"/>
   <arg name="urdf_extras" default="$(find husky_l)/urdf/vlp16_l.urdf.xacro"/>
 
-  <!-- spawn cimatec_map(by Pedro Techio) launcher -->
-  <include file="$(find cimatec_map)/launch/gazebo.launch">
+  <!-- spawn cimatec_map launcher -->
+  <include file="$(find bir_cimatec4_map)/launch/gazebo.launch">
     <arg name="debug" value="$(arg debug)" />
     <arg name="gui" value="$(arg gui)" />
     <arg name="paused" value="$(arg pause)" />

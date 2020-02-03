@@ -29,8 +29,8 @@
     <arg name="laser_enabled" value="$(arg laser_enabled)"/>
     <arg name="kinect_enabled" value="$(arg kinect_enabled)"/>
     <arg name="urdf_extras" value="$(arg urdf_extras)"/>
-    <arg name="x" default="45.0"/>
-    <arg name="y" default="-2.0"/>
+    <arg name="x" default="49.2"/>
+    <arg name="y" default="6.64"/>
     <arg name="z" default="0.0"/>
     <arg name="yaw" default="3.1415"/> 
   </include>

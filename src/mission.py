@@ -155,7 +155,7 @@ class Camera:
     msg_move_to_goal.header.frame_id = 'kinect_link'
 
     # pub values on move_base or use controller for best position
-    if self.flag1:
+    if self.flag1 and distance > 10:
       self.move_base_pub.publish(msg_move_to_goal)
       self.flag1 = False
 

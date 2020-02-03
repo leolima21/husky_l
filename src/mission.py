@@ -161,7 +161,7 @@ class Camera:
     # if self.flag1 and distance > 30 and sel:
     #   self.move_base_pub.publish(msg_move_to_goal)
     #   self.flag1 = False
-    if self.flag2 and self.cont == 200:
+    if self.cont == 600:
       self.move_base_pub.publish(msg_move_to_goal)
       self.flag2 = False
       self.cont = 0
@@ -180,9 +180,8 @@ class Camera:
     print('DISTANCIA EM LINHA: ' + str(distance))
     print('INCREMENTO X: ' + str(x_move_base))
     print('INCREMENTO Y: ' + str(y_move_base))
-    print('FLAG1: ' + str(self.flag1))
-    print('FLAG2: ' + str(self.flag2))
-    print('FLAG3: ' + str(self.flag3))
+    print('DET: ' + str(self.flag2))
+    print('ADJUST: ' + str(self.flag3))
     print('RAIO: ' + str(radius))
     print('POSICAO DO CENTRO:' + str(center_ball))
     print('##################################')

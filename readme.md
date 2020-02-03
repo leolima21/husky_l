@@ -2,19 +2,24 @@
 
 This project was make to autonomous navigation for Husky Clearpath simulated in Gazebo to found a yellow ball.
 
-
-
 # **Packages**
 Install this:
+---
 
 `$ sudo apt-get install ros-melodic-husky-simulator`
+
 `$ sudo apt-get install ros-melodic-husky-desktop`
+
 `$ sudo apt-get install ros-melodic-nav2d`
+
 `$ sudo apt install ros-melodic-husky-*`
+
 `$ sudo apt-get install libsdl-image1.2-dev`
+
 `$ sudo apt-get install libsdl-dev`
 
 Git clone this:
+---
 
 `$ git clone https://github.com/ros-planning/navigation.git`
 

@@ -105,9 +105,6 @@ class Camera:
         cv2.putText(cv2_frame, 'BOMB HAS BEEN DETECTED!', (20, 130), font, 2, (0, 0, 255), 5)
         if not self.kill:       
           os.system('rosnode kill Operator')
-          #self.cmd_vel_pub(0, 0)
-          #print('BOMB HAS BEEN DETECTED')
-          #time.sleep(10)
           self.kill = True
         
         ### MOVE BASE GOAL ###
@@ -163,13 +160,10 @@ class Camera:
       self.flag1 = False
 
     elif self.flag2 and distance < 10:
-      # self.cmd_vel_pub(0, 0)
-      # print('calculate a better position...')
-      # time.sleep(10)
       self.move_base_pub.publish(msg_move_to_goal)
       self.flag2 = False
 
-    elif distance < 4:
+    elif distance < 5:
       self.flag3 = False
       if (172 < radius < 176) and (638 < center_ball < 642):
         self.end_mission = False 

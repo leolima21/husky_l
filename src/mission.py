@@ -61,6 +61,7 @@ class Camera:
     self.cancel_map.publish()
     time.sleep(2)
     self.start_explore.publish()
+    print('GO')
 
   def callback(self, data):
     # setup timer and font
@@ -160,7 +161,7 @@ class Camera:
     # if self.flag1 and distance > 30 and sel:
     #   self.move_base_pub.publish(msg_move_to_goal)
     #   self.flag1 = False
-    if self.flag2 and self.cont == 60:
+    if self.flag2 and self.cont == 200:
       self.move_base_pub.publish(msg_move_to_goal)
       self.flag2 = False
       self.cont = 0

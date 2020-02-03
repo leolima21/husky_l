@@ -149,7 +149,7 @@ class Camera:
     
     # setup pub values with x and y positions
     msg_move_to_goal = PoseStamped()
-    msg_move_to_goal.pose.position.x = x_move_base - 3
+    msg_move_to_goal.pose.position.x = x_move_base # - 3
     msg_move_to_goal.pose.position.y = y_move_base
     msg_move_to_goal.pose.orientation.w = 1
     msg_move_to_goal.header.frame_id = 'kinect_link'

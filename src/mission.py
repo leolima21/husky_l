@@ -46,7 +46,7 @@ class Camera:
     self.linear_vel_control = Controller(5, -5, 0.01, 0, 0)
     self.angular_vel_control = Controller(5, -5, 0.01, 0, 0)
     # image publisher object
-    self.image_pub = rospy.Publisher('camera/mission', Image, queue_size=1)
+    self.image_pub = rospy.Publisher('camera/mission', Image, queue_size=10)
     # cmd_vel publisher object for flag3 adjustment
     self.velocity_publisher = rospy.Publisher('cmd_vel', Twist, queue_size=1)
     # move_base publisher object

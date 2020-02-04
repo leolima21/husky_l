@@ -45,9 +45,9 @@ class Camera:
     self.linear_vel_control = Controller(5, -5, 0.01, 0, 0)
     self.angular_vel_control = Controller(5, -5, 0.01, 0, 0)
     # image publisher object
-    self.image_pub = rospy.Publisher('camera/mission', Image, queue_size=10)
+    self.image_pub = rospy.Publisher('camera/mission', Image, queue_size=1)
     # cmd_vel publisher object for flag3 adjustment
-    self.velocity_publisher = rospy.Publisher('cmd_vel', Twist, queue_size=10)
+    self.velocity_publisher = rospy.Publisher('cmd_vel', Twist, queue_size=1)
     # move_base publisher object
     self.move_base_pub = rospy.Publisher("/move_base_simple/goal", PoseStamped, queue_size=1) 
     # exploration setup
@@ -56,11 +56,11 @@ class Camera:
     self.cancel_map = rospy.Publisher("/GetFirstMap/cancel", GoalID, queue_size = 1)
     self.cancel_explore = rospy.Publisher("/Explore/cancel", GoalID, queue_size = 1)
     # basic map setup
-    time.sleep(1)
+    #time.sleep(1)
     self.start_map.publish()
-    time.sleep(5)
+    time.sleep(1) #antigo 5
     self.cancel_map.publish()
-    time.sleep(2)
+    #time.sleep(2)
     self.start_explore.publish()
     print('PROCURANDO A BOLA...')
 
@@ -108,6 +108,7 @@ class Camera:
         cv2.putText(cv2_frame, 'BOMB HAS BEEN DETECTED!', (20, 130), font, 2, (0, 0, 255), 5)
         if not self.kill:       
           os.system('rosnode kill Operator')
+          os.system('rosnode kill Explore') #antigo sem isso
           self.cancel_explore.publish()
           self.kill = True
         

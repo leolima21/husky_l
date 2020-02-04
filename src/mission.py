@@ -21,6 +21,7 @@ from nav2d_navigator.msg import GetFirstMapActionGoal, ExploreActionGoal
 
 class Camera:
   def __init__(self):
+    self.lag_factor = input('insert a lag factor: ')
     self.move_bases_cont = 0
     self.cont = 0
     # node killer
@@ -160,7 +161,7 @@ class Camera:
     msg_move_to_goal.pose.orientation.w = 1
     msg_move_to_goal.header.frame_id = 'kinect_link'
    
-    if self.cont >= 600 or self.flag2:
+    if self.cont >= self.lag_factor or self.flag2:
       self.move_base_pub.publish(msg_move_to_goal)
       self.move_bases_cont += 1
       self.flag2 = False

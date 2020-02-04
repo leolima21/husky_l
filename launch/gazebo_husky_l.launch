@@ -37,7 +37,10 @@
 
   <!-- ################## MOVIMENTATION ###################### -->
   <!-- move base -->
-  <include file="$(find husky_navigation)/launch/move_base.launch" />
+  <!-- <include file="$(find husky_navigation)/launch/move_base.launch" /> -->
+  <include file="$(find husky_navigation)/launch/move_base.launch">
+    <arg name="no_static_map" value="true"/>
+  </include> 
 
   <!-- convert point cloud to laser scan -->
   <node pkg="pointcloud_to_laserscan" type="pointcloud_to_laserscan_node" name="pointcloud_to_laserscan">

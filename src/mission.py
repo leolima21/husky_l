@@ -21,6 +21,7 @@ from nav2d_navigator.msg import GetFirstMapActionGoal, ExploreActionGoal
 
 class Camera:
   def __init__(self):
+    self.move_bases_cont = 0
     self.cont = 0
     # node killer
     self.kill = False
@@ -157,12 +158,10 @@ class Camera:
     msg_move_to_goal.header.frame_id = 'kinect_link'
 
     self.cont +=1
-    # pub values on move_base or use controller for best position
-    # if self.flag1 and distance > 30 and sel:
-    #   self.move_base_pub.publish(msg_move_to_goal)
-    #   self.flag1 = False
-    if self.cont == 600:
+   
+    if self.cont == 500:
       self.move_base_pub.publish(msg_move_to_goal)
+      self.move_bases_cont += 1
       self.flag2 = False
       self.cont = 0
 
@@ -183,7 +182,8 @@ class Camera:
     print('DET: ' + str(self.flag2))
     print('ADJUST: ' + str(self.flag3))
     print('RAIO: ' + str(radius))
-    print('POSICAO DO CENTRO:' + str(center_ball))
+    print('POSICAO DO CENTRO: ' + str(center_ball))
+    print('MOVE BASES: ' + str(self.move_bases_cont))
     print('##################################')
 
 # main function

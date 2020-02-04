@@ -8,7 +8,7 @@
 
   <!-- arguments for gazebo and the cimatec_map -->
   <arg name="debug" default="false" />
-  <arg name="gui" default="true" />
+  <arg name="gui" default="false" />
   <arg name="pause" default="true" />
 
   <!-- arguments for husky robot and urdf extras -->

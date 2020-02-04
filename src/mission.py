@@ -62,7 +62,7 @@ class Camera:
     self.cancel_map.publish()
     time.sleep(2)
     self.start_explore.publish()
-    print('GO')
+    print('PROCURANDO A BOLA...')
 
   def callback(self, data):
     # setup timer and font
@@ -108,6 +108,7 @@ class Camera:
         cv2.putText(cv2_frame, 'BOMB HAS BEEN DETECTED!', (20, 130), font, 2, (0, 0, 255), 5)
         if not self.kill:       
           os.system('rosnode kill Operator')
+          self.cancel_explore.publish()
           self.kill = True
         
         ### MOVE BASE GOAL ###
@@ -124,7 +125,8 @@ class Camera:
       if self.save_img:
         cv2.imwrite('end_mission.jpg', cv2_frame)
         self.save_img = False
-
+    
+    self.cont +=1
     # convert img to ros and pub image in a topic
     ros_frame = self.bridge.cv2_to_imgmsg(cv2_frame, "bgr8")
     self.image_pub.publish(ros_frame)
@@ -156,10 +158,8 @@ class Camera:
     msg_move_to_goal.pose.position.y = y_move_base
     msg_move_to_goal.pose.orientation.w = 1
     msg_move_to_goal.header.frame_id = 'kinect_link'
-
-    self.cont +=1
    
-    if self.cont == 500:
+    if self.cont >= 600 or self.flag2:
       self.move_base_pub.publish(msg_move_to_goal)
       self.move_bases_cont += 1
       self.flag2 = False
@@ -183,6 +183,7 @@ class Camera:
     print('ADJUST: ' + str(self.flag3))
     print('RAIO: ' + str(radius))
     print('POSICAO DO CENTRO: ' + str(center_ball))
+    print('CONT: ' + str(self.cont))
     print('MOVE BASES: ' + str(self.move_bases_cont))
     print('##################################')
 

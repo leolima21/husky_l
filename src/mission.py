@@ -21,13 +21,15 @@ from nav2d_navigator.msg import GetFirstMapActionGoal, ExploreActionGoal
 
 class Camera:
   def __init__(self):
+    # this var controls the number of x/y positions sent to move_base topic
     self.lag_factor = input('insert a lag factor: ')
+    # number of move bases sent
     self.move_bases_cont = 0
+    # counter of lag factor
     self.cont = 0
     # node killer
     self.kill = False
-    # flag var
-    self.flag1 = True
+    # flag var used in move base loops
     self.flag2 = True
     self.flag3 = True
     # save img var
@@ -57,11 +59,9 @@ class Camera:
     self.cancel_map = rospy.Publisher("/GetFirstMap/cancel", GoalID, queue_size = 1)
     self.cancel_explore = rospy.Publisher("/Explore/cancel", GoalID, queue_size = 1)
     # basic map setup
-    #time.sleep(1)
     self.start_map.publish()
-    time.sleep(1) #antigo 5
+    time.sleep(1) 
     self.cancel_map.publish()
-    #time.sleep(2)
     self.start_explore.publish()
     print('PROCURANDO A BOLA...')
 
@@ -109,7 +109,7 @@ class Camera:
         cv2.putText(cv2_frame, 'BOMB HAS BEEN DETECTED!', (20, 130), font, 2, (0, 0, 255), 5)
         if not self.kill:       
           os.system('rosnode kill Operator')
-          os.system('rosnode kill Explore') #antigo sem isso
+          os.system('rosnode kill Explore') 
           self.cancel_explore.publish()
           self.kill = True
         
@@ -161,6 +161,7 @@ class Camera:
     msg_move_to_goal.pose.orientation.w = 1
     msg_move_to_goal.header.frame_id = 'kinect_link'
    
+    # send ball positions to move_base 
     if self.cont >= self.lag_factor or self.flag2:
       self.move_base_pub.publish(msg_move_to_goal)
       self.move_bases_cont += 1
